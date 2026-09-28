@@ -1,34 +1,35 @@
 import psutil
 import ipaddress
-def list_interface():
+from scapy.all import ARP,Ether,srp
+def get_Network():
     interfaces=psutil.net_if_addrs()
-    stats = psutil.net_if_stats()
-    activate_interfaces= []
-
     for name, dir in interfaces.items():
-        print(name)
-        if name in stats and stats[name].isup:
-            activate_interfaces.append(name)
         for dir in dir: 
-            if dir.family==2: #ipv4
-                ip=dir.address
-                mask=dir.netmask
-                network=ipaddress.IPv4Network(f"{ip}/{mask}", strict=False)
-                cidr = network.prefixlen
-                print(ip,mask)
-            print(network,cidr)
-            if(name=="lo"):
-                loopback = (name,dir.address)
-            
-    return loopback
+           if dir.family.name=="AF_INET":
+               ip=dir.address
+               mask=dir.netmask
+               if ip.startswith("127."):
+                   continue
+               network=ipaddress.IPv4Network(f"{ip}/{mask}",strict=False)
+               return str(network)  
 
-def LoopBackDetector():
-     IsLoopBack=False
-     nameInterface, dir = list_interface()
-     if (nameInterface == "lo"):
-         IsLoopBack=True
-     return IsLoopBack, nameInterface ,dir
+def list_host(network):
+    package= Ether(dst="ff:ff:ff:ff:ff:ff") / ARP(pdst=network)
+    answer =srp(package,timeout=2,verbose=False)[0]
+    hosts = []
 
-list_interface()
+    for send, answers in answer:
+        hosts.append(
+             {
+            "ip":answers.psrc,
+            "mac": answers.hwsrc 
+             }
+        )
+    return hosts 
 
-#Por qué append y ipv4networks
+network =get_Network()
+print(f"Network Detected: {network}")
+print("Searching Devices... \n")
+hosts = list_host(network)
+for host in hosts:
+    print(f"IP:{host['ip']:<15} MAC: {host['mac']}")

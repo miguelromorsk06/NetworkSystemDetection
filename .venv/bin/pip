@@ -1,4 +1,4 @@
-#!/home/migueluniusu/Escritorio/Proyectos_Personales/NetworkSystemDetection/.venv/bin/python3
+#!/home/miguel/Escritorio/Proyetos-Personales/NetworkSystemDetection/.venv/bin/python
 # -*- coding: utf-8 -*-
 import re
 import sys
